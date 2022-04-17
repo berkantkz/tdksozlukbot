@@ -4,6 +4,7 @@
   "description": "Telegram sohbet içi Türk Dil Kurumu Türkçe sözlüğü",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
