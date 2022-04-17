@@ -12,7 +12,7 @@ Sohbet içerisinde doğrudan olarak sözcük anlamına bakmak için ```@tdksozlu
 
 ## Kurulum
 
-1. ```index.js``` içerisinde yer alan ```TOKEN``` değişkenini botunuzun tokeni ile değiştirin.
+1. Bot tokeninizi ```TDKSOZLUKBOT_TOKEN``` değişken adıyla environment'e ekleyin ya da ```index.js``` içerisinde yer alan ```token``` değişkenini botunuzun tokeni ile değiştirin.
 
 2. Aşağıdaki komutları çalıştırın:
 ```console
@@ -33,7 +33,7 @@ Use ```@tdksozlukbot [word]``` command so as to check the meaning of a word righ
 
 ## Installation
 
-1. Change the ```TOKEN``` variable inside of ```index.js``` with your bot's token.
+1. Either add your bot's token as ```TDKSOZLUKBOT_TOKEN``` to your environment variable or change the ```token``` variable inside of ```index.js``` with your bot's token.
 
 2. Run the commands below:
 ```console
