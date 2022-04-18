@@ -16,14 +16,14 @@ Sohbet içerisinde doğrudan olarak sözcük anlamına bakmak için ```@tdksozlu
 
 2. Aşağıdaki komutları çalıştırın:
 ```console
-git clone https://github.com/berkantkz/telegram-inline-turkce-sozluk-nodejs
-cd telegram-inline-turkce-sozluk-nodejs
+git clone https://github.com/berkantkz/tdksozlukbot
+cd tdksozlukbot
 npm i
 node index.js
 ```
 
 ## Hata bildirme
-[Issues](https://github.com/berkantkz/telegram-inline-turkce-sozluk-nodejs/issues) sekmesi ya da [telegram hesabı](https://t.me/berkantkz)mdan hataları bildirebilirsiniz.
+[Issues](https://github.com/berkantkz/tdksozlukbot/issues) sekmesi ya da [telegram hesabı](https://t.me/berkantkz)mdan hataları bildirebilirsiniz.
 
 ###### English
 
@@ -37,11 +37,11 @@ Use ```@tdksozlukbot [word]``` command so as to check the meaning of a word righ
 
 2. Run the commands below:
 ```console
-git clone https://github.com/berkantkz/telegram-inline-turkce-sozluk-nodejs
-cd telegram-inline-turkce-sozluk-nodejs
+git clone https://github.com/berkantkz/tdksozlukbot
+cd tdksozlukbot
 npm i
 node index.js
 ```
 
 ## Reporting issues
-Issues can be reported via [Issues](https://github.com/berkantkz/telegram-inline-turkce-sozluk-nodejs/issues) tab or my [telegram account](https://t.me/berkantkz).
+Issues can be reported via [Issues](https://github.com/berkantkz/tdksozlukbot/issues) tab or my [telegram account](https://t.me/berkantkz).
