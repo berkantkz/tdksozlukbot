@@ -1,14 +1,14 @@
 /* index.js */
 
 const request = require("request");
-const https = require('https');
+const http = require('http');
 
 const TelegramBot = require('node-telegram-bot-api');
 
 // replace the value below with the Telegram token you receive from @BotFather
 const token = process.env.TDKSOZLUKBOT_TOKEN;
 
-https.createServer(function (req, res) {
+http.createServer(function (req, res) {
     res.writeHead(200);
     res.end("<html><title>tdk telegram bot by berkantkz</title><meta http-equiv='refresh' content='5; url=http://sozluk.gov.tr/'/><body><a href='https://t.me/berkantkz'>berkantkz</a></body></html>");
   }).listen(process.env.PORT || 5000);
