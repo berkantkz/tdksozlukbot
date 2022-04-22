@@ -41,13 +41,13 @@ logger = logging.getLogger(__name__)
 
 def start(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /start is issued."""
-    #update.message.reply_text('Hi!')
+    # update.message.reply_text('Hi!')
     print("TDK Sözlük başlatıldı")
 
 
 def help_command(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /help is issued."""
-    #update.message.reply_text('Help!')
+    # update.message.reply_text('Help!')
 
 
 def inlinequery(update: Update, context: CallbackContext) -> None:
@@ -138,6 +138,7 @@ if __name__ == '__main__':
 
 token_discord = os.environ['TDKSOZLUKBOT_DISCORD']
 
+
 class tdksozluk(discord.Client):
     async def on_ready(self):
         print('Logged on as {0}!'.format(self.user))
@@ -150,7 +151,7 @@ class tdksozluk(discord.Client):
 
         if message.author != client.user:
             print('Message from {0.author}: {0.content}'.format(message))
-        
+
         terim = re.sub("<@966110075901083648> +", "",
                        re.sub(" +", " ",  message.content))
         print(url + terim)
@@ -171,15 +172,18 @@ class tdksozluk(discord.Client):
 
         for i in range(len(anlamlar)):
             if "ozelliklerListe" in anlamlar[i]:
-                sonuc += "_" + anlamlar[i]["ozelliklerListe"][0]["tam_adi"] + "_\n"
+                sonuc += "_" + \
+                    anlamlar[i]["ozelliklerListe"][0]["tam_adi"] + "_\n"
 
             sonuc += f"**{i+1}**-) `" + anlamlar[i]["anlam"] + "`\n"
 
             if "orneklerListe" in anlamlar[i]:
                 for o in range(len(anlamlar[i]["orneklerListe"])):
-                    sonuc += "_Örnek:_ " + anlamlar[i]["orneklerListe"][o]["ornek"] + "\n"
+                    sonuc += "_Örnek:_ " + \
+                        anlamlar[i]["orneklerListe"][o]["ornek"] + "\n"
                     if "yazar" in anlamlar[i]["orneklerListe"][o]:
-                        sonuc += "\t\t_ -" + anlamlar[i]["orneklerListe"][o]["yazar"][0]["tam_adi"] + "_\n\n"
+                        sonuc += "\t\t_ -" + \
+                            anlamlar[i]["orneklerListe"][o]["yazar"][0]["tam_adi"] + "_\n\n"
                     else:
                         sonuc += "\n"
             else:
@@ -187,6 +191,7 @@ class tdksozluk(discord.Client):
 
         print("\t*** DISCORD BOT ***\n")
         await message.reply(sonuc, mention_author=False)
+
 
 client = tdksozluk()
 client.run(token_discord)
