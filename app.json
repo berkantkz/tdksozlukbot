@@ -1,0 +1,14 @@
+{
+    "name": "TDK Sözlük bot by berkantkz",
+    "description": "A bot for both Telegram and Discord that fetches desired Turkish word's meaning from TDK.",
+    "image": "heroku/python",
+    "repository": "https://github.com/berkantkz/tdksozlukbot",
+    "keywords": ["python", "tdkbot", "sozluk", "berkantkz"],
+    "environments": {
+      "test": {
+        "scripts": {
+          "postdeploy": "python3 tdksozlukbot.py"
+        }
+      }
+    }
+  }
