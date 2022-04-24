@@ -1,1 +1,1 @@
-web: python tdksozlukbot.py
+worker: python tdksozlukbot.py
