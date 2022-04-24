@@ -190,6 +190,9 @@ class tdksozluk(discord.Client):
                 sonuc += "\n"
 
         print("\t*** DISCORD BOT ***\n")
+        if len(sonuc) > 2000:
+            await message.reply(embed=discord.Embed(title="", description=sonuc), mention_author=False)            
+
         await message.reply(sonuc, mention_author=False)
 
 
