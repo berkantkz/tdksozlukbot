@@ -12,7 +12,6 @@ from telegram import InlineQueryResultArticle, ParseMode, InputTextMessageConten
 import requests
 import json
 from uuid import uuid4
-from unittest import result
 import logging
 import os
 
