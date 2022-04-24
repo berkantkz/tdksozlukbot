@@ -11,6 +11,8 @@
 
 Sohbet içerisinde doğrudan olarak sözcük anlamına bakmak için Telegram'da ```@tdksozlukbot [sözcük]``` komutunu girin; Discord'ta ise ```@TDK Sözlük [sözcük]``` mesajını iletin.
 
+# [TDK Sözlük Bot'u Discord sunucunuza ekleyin!](https://discord.com/oauth2/authorize?client_id=966110075901083648&scope=bot&permissions=274878155776)
+
 ## Kurulum
 
 > Not: Sisteminizde [python3](https://www.python.org/downloads/) kurulu olmalıdır.
@@ -38,6 +40,8 @@ python tdksozlukbot.py
 > This python script launches both Telegram and Discord bot at the same time. It is not possible to run separately (for now).
 
 Use ```@tdksozlukbot [word]``` command on Telegram and send ```@TDK Sözlük [word]``` message on Discord so as to check the meaning of a word right in the chat.
+
+# [Add TDK Sözlük Bot to your Discord server!](https://discord.com/oauth2/authorize?client_id=966110075901083648&scope=bot&permissions=274878155776)
 
 ## Installation
 
