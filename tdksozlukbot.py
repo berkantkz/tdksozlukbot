@@ -16,6 +16,48 @@ from uuid import uuid4
 import logging
 import os
 
+def prepare_text_from_word(word: tdk.models.Entry):
+    """Verilen tdk-py Entry'sinden mesaj olarak gönderilebilen, Markdown formatında bir metin hazırlar."""
+    metin = ""
+
+    if word.prefix:
+        metin = f"{metin}_({word.prefix}-)_ "
+    metin = f"{metin}__{word.entry}__ "
+    if word.order > 0:
+        metin = f"{metin}__({word.order})__"
+    metin = f"{metin}\n"
+    if word.suffix:
+        metin = f"{metin}_(-{word.suffix})_\n"
+    if word.original:
+        metin = f"{metin}_({word.original})_\n"
+    if word.pronunciation:
+        metin = f"{metin}_({word.pronunciation})_\n"
+    if word.plural:
+        metin = f"{metin}_(çoğul)_\n"
+    if word.proper:
+        metin = f"{metin}_(özel)_\n"
+
+    metin = f"{metin}\n__Anlamlar:__\n"
+    for number, meaning in enumerate(word.meanings, start=1):
+        metin = f"{metin}\n{number}. "
+        for meaning_property in meaning.properties:
+            metin = f"{metin}_({meaning_property.value.full_name})_ "
+        metin = f"{metin}{meaning.meaning}\n"
+        if meaning.examples:
+            metin = f"{metin}\n    __Örnek kullanımlar:__\n"
+            for example_number, example in enumerate(meaning.examples, start=1):
+                metin = f"{metin}    {example_number}. {example.example}\n"
+                if example.writer:
+                    metin = f"{metin}        __{example.writer.full_name}__\n"
+
+    if word.proverbs:
+        metin = f"{metin}\n__Atasözleri, deyimler ve birleşik sözcükler:__\n"
+    for number, proverb in enumerate(word.proverbs, start=1):
+        metin = f"{metin}{number}. {proverb.proverb}\n"
+
+    metin = f"{metin}\n__Heceler:__\n{'/'.join(tdk.tools.hecele(word.entry))}"
+    return metin
+
 ### TELEGRAM BOT ###
 
 token_telegram = os.environ["TDKSOZLUKBOT_TOKEN"]
@@ -138,44 +180,3 @@ client.run(token_discord)
 ### DISCORD BOT ###
 
 
-def prepare_text_from_word(word: tdk.models.Entry):
-    """Verilen tdk-py Entry'sinden mesaj olarak gönderilebilen, Markdown formatında bir metin hazırlar."""
-    metin = ""
-
-    if word.prefix:
-        metin = f"{metin}_({word.prefix}-)_ "
-    metin = f"{metin}__{word.entry}__ "
-    if word.order > 0:
-        metin = f"{metin}__({word.order})__"
-    metin = f"{metin}\n"
-    if word.suffix:
-        metin = f"{metin}_(-{word.suffix})_\n"
-    if word.original:
-        metin = f"{metin}_({word.original})_\n"
-    if word.pronunciation:
-        metin = f"{metin}_({word.pronunciation})_\n"
-    if word.plural:
-        metin = f"{metin}_(çoğul)_\n"
-    if word.proper:
-        metin = f"{metin}_(özel)_\n"
-
-    metin = f"{metin}\n__Anlamlar:__\n"
-    for number, meaning in enumerate(word.meanings, start=1):
-        metin = f"{metin}\n{number}. "
-        for meaning_property in meaning.properties:
-            metin = f"{metin}_({meaning_property.value.full_name})_ "
-        metin = f"{metin}{meaning.meaning}\n"
-        if meaning.examples:
-            metin = f"{metin}\n    __Örnek kullanımlar:__\n"
-            for example_number, example in enumerate(meaning.examples, start=1):
-                metin = f"{metin}    {example_number}. {example.example}\n"
-                if example.writer:
-                    metin = f"{metin}        __{example.writer.full_name}__\n"
-
-    if word.proverbs:
-        metin = f"{metin}\n__Atasözleri, deyimler ve birleşik sözcükler:__\n"
-    for number, proverb in enumerate(word.proverbs, start=1):
-        metin = f"{metin}{number}. {proverb.proverb}\n"
-
-    metin = f"{metin}\n__Heceler:__\n{'/'.join(tdk.tools.hecele(word.entry))}"
-    return metin
