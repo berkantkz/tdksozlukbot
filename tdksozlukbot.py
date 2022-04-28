@@ -58,6 +58,12 @@ def prepare_text_from_word(word: tdk.models.Entry):
     metin = f"{metin}\n__Heceler:__\n{'/'.join(tdk.tools.hecele(word.entry))}"
     return metin
 
+def ara(s):
+    try:
+        sonuc = tdk.gts.search(s)
+    except Exception:
+        sonuc = None
+
 ### TELEGRAM BOT ###
 
 token_telegram = os.environ["TDKSOZLUKBOT_TOKEN"]
@@ -93,8 +99,8 @@ def inlinequery(update: Update, context: CallbackContext) -> None:
 
     print("\n\t*** TELEGRAM BOT ***")
 
-    arama_sonuclari = tdk.gts.search(query)
-    if not arama_sonuclari:
+    arama_sonuclari = ara(query)
+    if arama_sonuclari == None:
         metin = "__Aranan söz Türk Dil Kurumu'nun Güncel Türkçe Sözlük'ünde mevcut değil.__"
     else:
         metin = prepare_text_from_word(arama_sonuclari[0])
@@ -160,8 +166,8 @@ class tdksozluk(discord.Client):
         query = re.sub("<@966110075901083648> +", "",
                        re.sub(" +", " ",  message.content))
 
-        arama_sonuclari = tdk.gts.search(query)
-        if not arama_sonuclari:
+        arama_sonuclari = ara(query)
+        if arama_sonuclari == None:
             return await message.reply("__Aranan söz Türk Dil Kurumu'nun Güncel Türkçe Sözlük'ünde mevcut değil.__", mention_author=False)
 
         metin = prepare_text_from_word(arama_sonuclari[0])
