@@ -168,7 +168,7 @@ class tdksozluk(discord.Client):
 
         arama_sonuclari = ara(query)
         if arama_sonuclari == None:
-            return await message.reply("__Aranan söz Türk Dil Kurumu'nun Güncel Türkçe Sözlük'ünde mevcut değil.__", mention_author=False)
+            return await message.reply("Aranan söz Türk Dil Kurumu'nun Güncel Türkçe Sözlük'ünde mevcut değil.", mention_author=False)
 
         metin = prepare_text_from_word(arama_sonuclari[0])
 
