@@ -9,19 +9,12 @@ import discord
 from telegram.utils.helpers import escape_markdown
 from telegram.ext import Updater, InlineQueryHandler, CommandHandler, CallbackContext
 from telegram import InlineQueryResultArticle, ParseMode, InputTextMessageContent, Update
-import requests
-import json
+import tdk.gts
+import tdk.tools
+import tdk.models
 from uuid import uuid4
 import logging
 import os
-
-url = "https://sozluk.gov.tr/gts?ara="
-headers = requests.utils.default_headers()
-headers.update(
-    {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36',
-    }
-)
 
 ### TELEGRAM BOT ###
 
@@ -58,46 +51,17 @@ def inlinequery(update: Update, context: CallbackContext) -> None:
 
     print("\n\t*** TELEGRAM BOT ***")
 
-    terim = query
-    print(url + terim)
-    tdk = requests.get((url + terim), headers=headers)
-    veri = json.loads(tdk.text)
-
-    if "error" in veri:
-        return
-
-    anlamlar = veri[0]["anlamlarListe"]
-    lisan = "_" + veri[0]["lisan"] + "_" if veri[0]["lisan"] else "Türkçe"
-    sonuc = f'**{terim}**:\n\nDil: {lisan}\n'
-
-    if veri[0]["birlesikler"] != None:
-        sonuc += "Birleşikler: " + veri[0]["birlesikler"] + "\n\n"
+    arama_sonuclari = tdk.gts.search(query)
+    if not arama_sonuclari:
+        metin = "__Aranan söz Türk Dil Kurumu'nun Güncel Türkçe Sözlük'ünde mevcut değil.__"
     else:
-        sonuc += "\n"
-
-    for i in range(len(anlamlar)):
-        if "ozelliklerListe" in anlamlar[i]:
-            sonuc += "_" + anlamlar[i]["ozelliklerListe"][0]["tam_adi"] + "_\n"
-
-        sonuc += f"**{i+1}**-) `" + anlamlar[i]["anlam"] + "`\n"
-
-        if "orneklerListe" in anlamlar[i]:
-            for o in range(len(anlamlar[i]["orneklerListe"])):
-                sonuc += "_Örnek:_ " + \
-                    anlamlar[i]["orneklerListe"][o]["ornek"] + "\n"
-                if "yazar" in anlamlar[i]["orneklerListe"][o]:
-                    sonuc += "\t\t_ -" + \
-                        anlamlar[i]["orneklerListe"][o]["yazar"][0]["tam_adi"] + "_\n\n"
-                else:
-                    sonuc += "\n"
-        else:
-            sonuc += "\n"
+        metin = prepare_text_from_word(arama_sonuclari[0])
 
     son = [
         InlineQueryResultArticle(
             id=str(uuid4()),
             title=query,
-            input_message_content=InputTextMessageContent(sonuc, parse_mode=ParseMode.MARKDOWN))
+            input_message_content=InputTextMessageContent(metin, parse_mode=ParseMode.MARKDOWN))
     ]
 
     update.inline_query.answer(son)
@@ -151,48 +115,20 @@ class tdksozluk(discord.Client):
         if message.author != client.user:
             print('Message from {0.author}: {0.content}'.format(message))
 
-        terim = re.sub("<@966110075901083648> +", "",
+        query = re.sub("<@966110075901083648> +", "",
                        re.sub(" +", " ",  message.content))
-        print(url + terim)
-        tdk = requests.get((url + terim), headers=headers)
-        veri = json.loads(tdk.text)
 
-        if "error" in veri:
-            return await message.reply("Aranan bu sözcük TDK'da mevcut değil.", mention_author=False)
+        arama_sonuclari = tdk.gts.search(query)
+        if not arama_sonuclari:
+            return await message.reply("__Aranan söz Türk Dil Kurumu'nun Güncel Türkçe Sözlük'ünde mevcut değil.__", mention_author=False)
 
-        anlamlar = veri[0]["anlamlarListe"]
-        lisan = "_" + veri[0]["lisan"] + "_" if veri[0]["lisan"] else "Türkçe"
-        sonuc = f'**{terim}**:\n\nDil: {lisan}\n'
-
-        if veri[0]["birlesikler"] != None:
-            sonuc += "Birleşikler: " + veri[0]["birlesikler"] + "\n\n"
-        else:
-            sonuc += "\n"
-
-        for i in range(len(anlamlar)):
-            if "ozelliklerListe" in anlamlar[i]:
-                sonuc += "_" + \
-                    anlamlar[i]["ozelliklerListe"][0]["tam_adi"] + "_\n"
-
-            sonuc += f"**{i+1}**-) `" + anlamlar[i]["anlam"] + "`\n"
-
-            if "orneklerListe" in anlamlar[i]:
-                for o in range(len(anlamlar[i]["orneklerListe"])):
-                    sonuc += "_Örnek:_ " + \
-                        anlamlar[i]["orneklerListe"][o]["ornek"] + "\n"
-                    if "yazar" in anlamlar[i]["orneklerListe"][o]:
-                        sonuc += "\t\t_ -" + \
-                            anlamlar[i]["orneklerListe"][o]["yazar"][0]["tam_adi"] + "_\n\n"
-                    else:
-                        sonuc += "\n"
-            else:
-                sonuc += "\n"
+        metin = prepare_text_from_word(arama_sonuclari[0])
 
         print("\t*** DISCORD BOT ***\n")
-        if len(sonuc) > 2000:
-            await message.reply(embed=discord.Embed(title="", description=sonuc), mention_author=False)            
-
-        await message.reply(sonuc, mention_author=False)
+        if len(metin) > 2000:
+            await message.reply(embed=discord.Embed(title="", description=metin), mention_author=False)
+        else:
+            await message.reply(metin, mention_author=False)
 
 
 client = tdksozluk()
@@ -200,3 +136,46 @@ client.run(token_discord)
 
 
 ### DISCORD BOT ###
+
+
+def prepare_text_from_word(word: tdk.models.Entry):
+    """Verilen tdk-py Entry'sinden mesaj olarak gönderilebilen, Markdown formatında bir metin hazırlar."""
+    metin = ""
+
+    if word.prefix:
+        metin = f"{metin}_({word.prefix}-)_ "
+    metin = f"{metin}__{word.entry}__ "
+    if word.order > 0:
+        metin = f"{metin}__({word.order})__"
+    metin = f"{metin}\n"
+    if word.suffix:
+        metin = f"{metin}_(-{word.suffix})_\n"
+    if word.original:
+        metin = f"{metin}_({word.original})_\n"
+    if word.pronunciation:
+        metin = f"{metin}_({word.pronunciation})_\n"
+    if word.plural:
+        metin = f"{metin}_(çoğul)_\n"
+    if word.proper:
+        metin = f"{metin}_(özel)_\n"
+
+    metin = f"{metin}\n__Anlamlar:__\n"
+    for number, meaning in enumerate(word.meanings, start=1):
+        metin = f"{metin}\n{number}. "
+        for meaning_property in meaning.properties:
+            metin = f"{metin}_({meaning_property.value.full_name})_ "
+        metin = f"{metin}{meaning.meaning}\n"
+        if meaning.examples:
+            metin = f"{metin}\n    __Örnek kullanımlar:__\n"
+            for example_number, example in enumerate(meaning.examples, start=1):
+                metin = f"{metin}    {example_number}. {example.example}\n"
+                if example.writer:
+                    metin = f"{metin}        __{example.writer.full_name}__\n"
+
+    if word.proverbs:
+        metin = f"{metin}\n__Atasözleri, deyimler ve birleşik sözcükler:__\n"
+    for number, proverb in enumerate(word.proverbs, start=1):
+        metin = f"{metin}{number}. {proverb.proverb}\n"
+
+    metin = f"{metin}\n__Heceler:__\n{'/'.join(tdk.tools.hecele(word.entry))}"
+    return metin
