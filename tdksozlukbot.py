@@ -37,7 +37,7 @@ def prepare_text_from_word(word: tdk.models.Entry):
     if word.proper:
         metin = f"{metin}_(özel)_\n"
 
-    metin = f"{metin}\n__Anlamlar:__\n"
+    metin = f"{metin}\nAnlamlar:\n"
     for number, meaning in enumerate(word.meanings, start=1):
         metin = f"{metin}\n{number}. "
         for meaning_property in meaning.properties:
@@ -48,7 +48,7 @@ def prepare_text_from_word(word: tdk.models.Entry):
             for example_number, example in enumerate(meaning.examples, start=1):
                 metin = f"{metin}    {example_number}. {example.example}\n"
                 if example.writer:
-                    metin = f"{metin}        __{example.writer.full_name}__\n"
+                    metin = f"{metin}        _{example.writer.full_name}_\n"
 
     if word.proverbs:
         metin = f"{metin}\n__Atasözleri, deyimler ve birleşik sözcükler:__\n"
