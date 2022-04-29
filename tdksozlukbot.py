@@ -7,18 +7,20 @@
 import re
 import discord
 from telegram.utils.helpers import escape_markdown
-from telegram.ext import Updater, InlineQueryHandler, CommandHandler, CallbackContext
-from telegram import InlineQueryResultArticle, ParseMode, InputTextMessageContent, Update
+from telegram.ext import Updater, InlineQueryHandler, CommandHandler, CallbackContext, ChosenInlineResultHandler
+from telegram import InlineQueryResultArticle, ParseMode, InputTextMessageContent, Update, InlineKeyboardMarkup, InlineKeyboardButton
 import tdk.gts
 import tdk.tools
 import tdk.models
 from uuid import uuid4
 import logging
 import os
+from dotenv import load_dotenv
+from hashlib import md5
 
 ### TELEGRAM BOT ###
 
-token_telegram = os.environ["TDKSOZLUKBOT_TOKEN"]
+load_dotenv()
 
 # Enable logging
 logging.basicConfig(
@@ -26,6 +28,9 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+TDK_INDEX = tdk.gts.index()
+HASH_LUT = {md5(word.encode("utf-8"), usedforsecurity=False).hexdigest(): word for word in TDK_INDEX}
 
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
@@ -51,27 +56,38 @@ def inlinequery(update: Update, context: CallbackContext) -> None:
 
     print("\n\t*** TELEGRAM BOT ***")
 
-    arama_sonuclari = tdk.gts.search(query)
-    if not arama_sonuclari:
-        metin = "__Aranan söz Türk Dil Kurumu'nun Güncel Türkçe Sözlük'ünde mevcut değil.__"
+    prompt_entries = filter(lambda s: s.startswith(query), TDK_INDEX)
+    if not prompt_entries:
+        update.inline_query.answer([])
+        return
     else:
-        metin = prepare_text_from_word(arama_sonuclari[0])
+        update.inline_query.answer([
+            InlineQueryResultArticle(
+                id=md5(word.encode("utf-8"), usedforsecurity=False).hexdigest(),
+                title=word,
+                input_message_content=InputTextMessageContent(
+                    f"Sözcük bilgisi alınıyor: {word}",
+                    parse_mode=ParseMode.MARKDOWN
+                ),
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("Sözcük yükleniyor...", callback_data="1")
+                ]])
+            ) for word in prompt_entries
+        ], auto_pagination=True)
 
-    son = [
-        InlineQueryResultArticle(
-            id=str(uuid4()),
-            title=query,
-            input_message_content=InputTextMessageContent(metin, parse_mode=ParseMode.MARKDOWN))
-    ]
+def queryresult_chosen(update: Update, context: CallbackContext) -> None:
+    word_hash = update.chosen_inline_result.result_id
+    inline_message_id = update.chosen_inline_result.inline_message_id
+    context.bot.edit_message_text(
+        inline_message_id=inline_message_id,
+        text=prepare_text_from_word(tdk.gts.search(HASH_LUT[word_hash])[0], platform="telegram"),
+        parse_mode=ParseMode.MARKDOWN
+    )
 
-    update.inline_query.answer(son)
-    print("\t*** TELEGRAM BOT ***\n")
-
-
-def main() -> None:
+def run_telegram_bot() -> None:
     """Run the bot."""
     # Create the Updater and pass it your bot's token.
-    updater = Updater(token_telegram)
+    updater = Updater(telegram_token)
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
@@ -82,6 +98,7 @@ def main() -> None:
 
     # on non command i.e message - echo the message on Telegram
     dispatcher.add_handler(InlineQueryHandler(inlinequery))
+    dispatcher.add_handler(ChosenInlineResultHandler(queryresult_chosen))
 
     # Start the Bot
     updater.start_polling()
@@ -92,15 +109,9 @@ def main() -> None:
     # updater.idle()
 
 
-if __name__ == '__main__':
-    main()
-
 ### TELEGRAM BOT ###
 
 ### DISCORD BOT ###
-
-token_discord = os.environ['TDKSOZLUKBOT_DISCORD']
-
 
 class tdksozluk(discord.Client):
     async def on_ready(self):
@@ -115,14 +126,14 @@ class tdksozluk(discord.Client):
         if message.author != client.user:
             print('Message from {0.author}: {0.content}'.format(message))
 
-        query = re.sub("<@966110075901083648> +", "",
+        query = re.sub("<@\d{18}> +", "",
                        re.sub(" +", " ",  message.content))
 
         arama_sonuclari = tdk.gts.search(query)
         if not arama_sonuclari:
-            return await message.reply("__Aranan söz Türk Dil Kurumu'nun Güncel Türkçe Sözlük'ünde mevcut değil.__", mention_author=False)
+            return await message.reply("**Aranan söz Türk Dil Kurumu'nun Güncel Türkçe Sözlük'ünde mevcut değil.**", mention_author=False)
 
-        metin = prepare_text_from_word(arama_sonuclari[0])
+        metin = prepare_text_from_word(arama_sonuclari[0], platform="discord")
 
         print("\t*** DISCORD BOT ***\n")
         if len(metin) > 2000:
@@ -130,52 +141,72 @@ class tdksozluk(discord.Client):
         else:
             await message.reply(metin, mention_author=False)
 
-
-client = tdksozluk()
-client.run(token_discord)
-
-
 ### DISCORD BOT ###
 
 
-def prepare_text_from_word(word: tdk.models.Entry):
+formatters = {
+    "discord": {
+        "bold": lambda t: f"**{t}**",
+        "italic": lambda t: f"*{t}*",
+    },
+    "telegram": {
+        "bold": lambda t: f"**{t}**",
+        "italic": lambda t: f"__{t}__",
+    },
+}
+
+
+def prepare_text_from_word(word: tdk.models.Entry, platform: str):
     """Verilen tdk-py Entry'sinden mesaj olarak gönderilebilen, Markdown formatında bir metin hazırlar."""
+    
+    bold = formatters[platform]["bold"]
+    italic = formatters[platform]["italic"]
+
     metin = ""
 
     if word.prefix:
-        metin = f"{metin}_({word.prefix}-)_ "
-    metin = f"{metin}__{word.entry}__ "
+        metin += bold("(" + word.prefix + "-)") + " "
+    metin += bold(word.entry)
     if word.order > 0:
-        metin = f"{metin}__({word.order})__"
-    metin = f"{metin}\n"
+        metin += bold("(" + word.order + ")") + " "
+    metin += "\n"
     if word.suffix:
-        metin = f"{metin}_(-{word.suffix})_\n"
+        metin += italic("(-"+ word.suffix + ")") + "\n"
     if word.original:
-        metin = f"{metin}_({word.original})_\n"
+        metin += italic("(" + word.original + ")") + "\n"
     if word.pronunciation:
-        metin = f"{metin}_({word.pronunciation})_\n"
+        metin += italic("(" + word.pronunciation + ")") + "\n"
     if word.plural:
-        metin = f"{metin}_(çoğul)_\n"
+        metin += italic("(çoğul)") + "\n"
     if word.proper:
-        metin = f"{metin}_(özel)_\n"
+        metin += italic("(özel)") + "\n"
 
-    metin = f"{metin}\n__Anlamlar:__\n"
+    metin += "\n" + bold("Anlamlar:") + "\n"
     for number, meaning in enumerate(word.meanings, start=1):
-        metin = f"{metin}\n{number}. "
+        metin += f"\n{number}. "
         for meaning_property in meaning.properties:
-            metin = f"{metin}_({meaning_property.value.full_name})_ "
-        metin = f"{metin}{meaning.meaning}\n"
+            metin += italic("(" + meaning_property.value.full_name + ")") + " "
+        metin += meaning.meaning + "\n"
         if meaning.examples:
-            metin = f"{metin}\n    __Örnek kullanımlar:__\n"
+            metin += "\n    " + bold("Örnek kullanımlar:") + "\n"
             for example_number, example in enumerate(meaning.examples, start=1):
-                metin = f"{metin}    {example_number}. {example.example}\n"
+                metin += f"    {example_number}. {example.example}\n"
                 if example.writer:
-                    metin = f"{metin}        __{example.writer.full_name}__\n"
+                    metin += "        "+bold(example.writer.full_name) + "\n"
 
     if word.proverbs:
-        metin = f"{metin}\n__Atasözleri, deyimler ve birleşik sözcükler:__\n"
+        metin += "\n"+ bold("Atasözleri, deyimler ve birleşik sözcükler:") + "\n"
     for number, proverb in enumerate(word.proverbs, start=1):
-        metin = f"{metin}{number}. {proverb.proverb}\n"
+        metin += f"{number}. {proverb.proverb}\n"
 
-    metin = f"{metin}\n__Heceler:__\n{'/'.join(tdk.tools.hecele(word.entry))}"
+    metin += "\n" + bold("Heceler:") + "\n" + '/'.join(tdk.tools.hecele(word.entry))
     return metin
+
+if __name__ == '__main__':
+    telegram_token = os.getenv("TELEGRAM_TOKEN") or os.getenv("TDKSOZLUKBOT_TOKEN")
+    discord_token = os.getenv("DISCORD_TOKEN") or os.getenv("TDKSOZLUKBOT_DISCORD")
+
+    client = tdksozluk()
+    client.run(discord_token)
+
+    run_telegram_bot()
