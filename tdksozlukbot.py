@@ -31,6 +31,26 @@ logger = logging.getLogger(__name__)
 
 TDK_INDEX = tdk.gts.index()
 HASH_LUT = {md5(word.encode("utf-8"), usedforsecurity=False).hexdigest(): word for word in TDK_INDEX}
+SEARCH_IDS_CACHE = {}
+ID_DATA_CACHE = {}  # The entire dictionary takes only about 80 MB.
+
+__tdk_gts_search = tdk.gts.search
+def __tdk_gts_search__hook(query: str) -> list[tdk.models.Entry]:
+    global SEARCH_IDS_CACHE
+    global ID_DATA_CACHE
+
+    if query in SEARCH_IDS_CACHE:
+        print("Cache hit for "+query)
+        return list(map(ID_DATA_CACHE.get, SEARCH_IDS_CACHE[query]))
+
+    print("Cache miss on "+query)
+    entries = __tdk_gts_search(query)
+    SEARCH_IDS_CACHE[query] = list(map(lambda entry: entry.tdk_id, entries))
+    for entry in entries:
+        ID_DATA_CACHE[entry.tdk_id] = entry
+
+    return __tdk_gts_search__hook(query)
+tdk.gts.search = __tdk_gts_search__hook
 
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
