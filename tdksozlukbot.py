@@ -12,6 +12,7 @@ from telegram import InlineQueryResultArticle, ParseMode, InputTextMessageConten
 import tdk.gts
 import tdk.tools
 import tdk.models
+from tdk.exceptions import TdkSearchErrorException
 from uuid import uuid4
 import logging
 import os
@@ -44,7 +45,11 @@ def __tdk_gts_search__hook(query: str) -> list[tdk.models.Entry]:
         return list(map(ID_DATA_CACHE.get, SEARCH_IDS_CACHE[query]))
 
     print("Cache miss on "+query)
-    entries = __tdk_gts_search(query)
+    try:
+        entries = __tdk_gts_search(query)
+    except TdkSearchErrorException:
+        SEARCH_IDS_CACHE[query] = []
+        return []
     SEARCH_IDS_CACHE[query] = list(map(lambda entry: entry.tdk_id, entries))
     for entry in entries:
         ID_DATA_CACHE[entry.tdk_id] = entry
@@ -80,20 +85,20 @@ def inlinequery(update: Update, context: CallbackContext) -> None:
     if not prompt_entries:
         update.inline_query.answer([])
         return
-    else:
-        update.inline_query.answer([
-            InlineQueryResultArticle(
-                id=md5(word.encode("utf-8"), usedforsecurity=False).hexdigest(),
-                title=word,
-                input_message_content=InputTextMessageContent(
-                    f"Sözcük bilgisi alınıyor: {word}",
-                    parse_mode=ParseMode.MARKDOWN
-                ),
-                reply_markup=InlineKeyboardMarkup([[
-                    InlineKeyboardButton("Sözcük yükleniyor...", callback_data="1")
-                ]])
-            ) for word in prompt_entries
-        ], auto_pagination=True)
+
+    update.inline_query.answer([
+        InlineQueryResultArticle(
+            id=md5(word.encode("utf-8"), usedforsecurity=False).hexdigest(),
+            title=word,
+            input_message_content=InputTextMessageContent(
+                f"Sözcük bilgisi alınıyor: {word}",
+                parse_mode=ParseMode.MARKDOWN
+            ),
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("Sözcük yükleniyor...", callback_data="1")
+            ]])
+        ) for word in prompt_entries
+    ], auto_pagination=True)
 
 def queryresult_chosen(update: Update, context: CallbackContext) -> None:
     word_hash = update.chosen_inline_result.result_id
