@@ -64,6 +64,8 @@ def ara(s):
     except Exception:
         sonuc = None
 
+    return sonuc
+
 ### TELEGRAM BOT ###
 
 token_telegram = os.environ["TDKSOZLUKBOT_TOKEN"]
