@@ -103,7 +103,7 @@ def inlinequery(update: Update, context: CallbackContext) -> None:
 
     arama_sonuclari = ara(query)
     if arama_sonuclari == None:
-        metin = "__Aranan söz Türk Dil Kurumu'nun Güncel Türkçe Sözlük'ünde mevcut değil.__"
+        metin = f"__ {query} sözcüğü Türk Dil Kurumu'nun Güncel Türkçe Sözlük'ünde mevcut değil.__"
     else:
         metin = prepare_text_from_word(arama_sonuclari[0])
 
@@ -170,7 +170,7 @@ class tdksozluk(discord.Client):
 
         arama_sonuclari = ara(query)
         if arama_sonuclari == None:
-            return await message.reply("Aranan söz Türk Dil Kurumu'nun Güncel Türkçe Sözlük'ünde mevcut değil.", mention_author=False)
+            return await message.reply(f"{query} sözcüğü Türk Dil Kurumu'nun Güncel Türkçe Sözlük'ünde mevcut değil.", mention_author=False)
 
         metin = prepare_text_from_word(arama_sonuclari[0])
 
